@@ -1,0 +1,10 @@
+{
+  "name": "SheWrites!",
+  "description": "An all-in-one AI content studio for women entrepreneurs to create viral Threads posts, affirmations, captions, and luxury-inspired visuals, turning daily posts into profit.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
