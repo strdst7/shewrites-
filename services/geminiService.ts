@@ -1,20 +1,21 @@
 import { GoogleGenAI, Type, GenerateContentResponse, Chat, Modality, ThinkingLevel } from "@google/genai";
 import { ChatMessage, ImageFile } from '../types';
 
-const API_KEY = process.env.API_KEY || process.env.GEMINI_API_KEY;
-
-if (!API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ 
-  apiKey: API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
+const getAI = () => {
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable not set");
   }
-});
+
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      }
+    }
+  });
+};
 let chatInstance: Chat | null = null;
 
 const fileToGenerativePart = (imageFile: ImageFile) => {
@@ -53,7 +54,7 @@ export const geminiService = {
         config.tools = [{ googleSearch: {} }];
     }
 
-    return await ai.models.generateContent({
+    return await getAI().models.generateContent({
       model,
       contents: prompt,
       config,
@@ -64,7 +65,7 @@ export const geminiService = {
     if (image) {
       const imagePart = fileToGenerativePart(image);
       const textPart = { text: prompt };
-      const response = await ai.models.generateContent({
+      const response = await getAI().models.generateContent({
         model: 'gemini-3.1-flash-lite-image',
         contents: { parts: [imagePart, textPart] },
         config: {
@@ -77,7 +78,7 @@ export const geminiService = {
       }
       throw new Error("No image was generated from the provided image and prompt.");
     } else {
-      const response = await ai.models.generateImages({
+      const response = await getAI().models.generateImages({
         model: 'imagen-3.0-generate-001',
         prompt,
         config: {
@@ -93,7 +94,7 @@ export const geminiService = {
 
   async editImage(prompt: string, image: ImageFile): Promise<string> {
     const imagePart = fileToGenerativePart(image);
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: 'gemini-3.1-flash-lite-image',
         contents: { parts: [imagePart, { text: prompt }] },
         config: {
@@ -109,7 +110,7 @@ export const geminiService = {
 
   async analyzeImage(prompt: string, image: ImageFile): Promise<string> {
     const imagePart = fileToGenerativePart(image);
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: 'gemini-3.6-flash',
       contents: { parts: [imagePart, { text: prompt }] },
     });
@@ -117,7 +118,7 @@ export const geminiService = {
   },
 
   startChat(): void {
-    chatInstance = ai.chats.create({
+    chatInstance = getAI().chats.create({
       model: 'gemini-3.6-flash',
       config: {
         systemInstruction: "Anda ialah pembantu AI strategi kandungan dan perniagaan untuk SheWrites!, khas untuk usahawan wanita di Malaysia. Sentiasa beri respons dalam Bahasa Melayu yang mesra, profesional, santai dan bermotivasi, mengikut trend pasaran Malaysia.",
@@ -134,7 +135,7 @@ export const geminiService = {
   },
   
   async textToSpeech(text: string): Promise<string> {
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
         model: "gemini-3.1-flash-tts-preview",
         contents: [{ parts: [{ text }] }],
         config: {
