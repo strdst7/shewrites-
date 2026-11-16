@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { geminiService } from '../../services/geminiService';
+import { geminiService, getGeminiError } from '../../services/geminiService';
 import Button from '../common/Button';
 import { Volume2 } from '../Icons';
 import { useLanguage } from '../../LanguageContext';
@@ -94,8 +94,7 @@ const AudioTools: React.FC = () => {
         source.onended = () => setIsSpeaking(false);
         
     } catch (err) {
-        console.error("TTS failed", err);
-        setAudioError(t.common.error);
+         setAudioError(getGeminiError(err));
         setIsSpeaking(false);
     }
   };

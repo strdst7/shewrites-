@@ -1,22 +1,36 @@
 import { GoogleGenAI, Type, GenerateContentResponse, Chat, Modality, ThinkingLevel } from "@google/genai";
-import { ChatMessage, ImageFile } from '../types';
+import { ImageFile } from '../types';
+
+let apiKey = '';
+let chatInstance: Chat | null = null;
+
+export const setGeminiApiKey = (key: string) => {
+  apiKey = key.trim();
+  chatInstance = null;
+};
 
 const getAI = () => {
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable not set");
+    throw new Error("Enter your Gemini API key above before making an AI request.");
   }
 
-  return new GoogleGenAI({
-    apiKey,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      }
-    }
-  });
+  return new GoogleGenAI({ apiKey });
 };
-let chatInstance: Chat | null = null;
+
+export const getGeminiError = (error: unknown): string => {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!apiKey) return "Enter your Gemini API key above before making an AI request.";
+  if (/api.key|api key|unauthorized|unauthenticated|401|403|permission.denied/i.test(message)) {
+    return "Gemini rejected your API key or its permissions. Check your key in Google AI Studio and update it above.";
+  }
+  if (/quota|rate.limit|resource.exhausted|429/i.test(message)) {
+    return "Gemini quota or rate limit reached. Check your Google AI Studio usage and try again later.";
+  }
+  if (/not.found|not supported|404|model/i.test(message)) {
+    return "This Gemini model is unavailable for your key. Check your model access in Google AI Studio.";
+  }
+  return "Gemini request failed. Check your connection and Google AI Studio access, then try again.";
+};
 
 const fileToGenerativePart = (imageFile: ImageFile) => {
   return {
@@ -62,34 +76,19 @@ export const geminiService = {
   },
 
   async generateImage(prompt: string, aspectRatio: string, image?: ImageFile): Promise<string> {
-    if (image) {
-      const imagePart = fileToGenerativePart(image);
-      const textPart = { text: prompt };
-      const response = await getAI().models.generateContent({
-        model: 'gemini-3.1-flash-lite-image',
-        contents: { parts: [imagePart, textPart] },
-        config: {
-          responseModalities: [Modality.IMAGE],
-        },
-      });
-      const part = response.candidates?.[0]?.content?.parts?.[0];
-      if (part?.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-      }
-      throw new Error("No image was generated from the provided image and prompt.");
-    } else {
-      const response = await getAI().models.generateImages({
-        model: 'imagen-3.0-generate-001',
-        prompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
-          aspectRatio,
-        },
-      });
-      const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-      return `data:image/jpeg;base64,${base64ImageBytes}`;
+    const response = await getAI().models.generateContent({
+      model: 'gemini-3.1-flash-lite-image',
+      contents: { parts: [...(image ? [fileToGenerativePart(image)] : []), { text: prompt }] },
+      config: {
+        responseModalities: [Modality.IMAGE],
+        imageConfig: { aspectRatio },
+      },
+    });
+    const part = response.candidates?.[0]?.content?.parts?.find(part => part.inlineData?.data);
+    if (part?.inlineData?.data) {
+      return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
     }
+    throw new Error("No image was generated from the provided prompt.");
   },
 
   async editImage(prompt: string, image: ImageFile): Promise<string> {
@@ -101,9 +100,9 @@ export const geminiService = {
           responseModalities: [Modality.IMAGE],
         },
     });
-    const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part?.inlineData) {
-        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    const part = response.candidates?.[0]?.content?.parts?.find(part => part.inlineData?.data);
+    if (part?.inlineData?.data) {
+        return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
     }
     throw new Error("No image was generated.");
   },
@@ -118,19 +117,17 @@ export const geminiService = {
   },
 
   startChat(): void {
-    chatInstance = getAI().chats.create({
+    chatInstance = null;
+  },
+
+  async streamChatMessage(message: string): Promise<AsyncGenerator<GenerateContentResponse>> {
+    if (!chatInstance) chatInstance = getAI().chats.create({
       model: 'gemini-3.6-flash',
       config: {
         systemInstruction: "Anda ialah pembantu AI strategi kandungan dan perniagaan untuk SheWrites!, khas untuk usahawan wanita di Malaysia. Sentiasa beri respons dalam Bahasa Melayu yang mesra, profesional, santai dan bermotivasi, mengikut trend pasaran Malaysia.",
       },
       history: [],
     });
-  },
-
-  async streamChatMessage(message: string): Promise<AsyncGenerator<GenerateContentResponse>> {
-    if (!chatInstance) {
-      this.startChat();
-    }
     return await chatInstance!.sendMessageStream({ message });
   },
   

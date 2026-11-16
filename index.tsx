@@ -3,6 +3,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { LanguageProvider } from './LanguageContext';
+import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

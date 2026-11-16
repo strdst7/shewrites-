@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { geminiService } from '../../services/geminiService';
+import { geminiService, getGeminiError } from '../../services/geminiService';
 import Button from '../common/Button';
 import Select from '../common/Select';
 import { ContentSkeleton } from '../common/Skeleton';
@@ -227,8 +227,7 @@ const ContentGenerator: React.FC = () => {
           setResult(parsedResult as Result);
       }
     } catch (err) {
-      setError(t.common.error);
-      console.error(err);
+      setError(getGeminiError(err));
     } finally {
       setIsLoading(false);
     }

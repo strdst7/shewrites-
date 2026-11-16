@@ -110,11 +110,8 @@
    npm install
    ```
 
-3. **Configure Environment Variables:**
-   Create a `.env` or `.env.local` file in the root directory:
-   ```env
-   GEMINI_API_KEY=your_actual_gemini_api_key_here
-   ```
+3. **Use your own Gemini API key:**
+   Get a key from [Google AI Studio](https://aistudio.google.com/apikey). Enter it in the app's Gemini API key field. The key stays in the current browser tab and clears on refresh. SheWrites! sends it directly to Google for AI requests. Do not use a shared key or add a key to Vercel environment variables.
 
 4. **Start the Development Server:**
    ```bash

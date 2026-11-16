@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { geminiService } from '../../services/geminiService';
+import { geminiService, getGeminiError } from '../../services/geminiService';
 import Button from '../common/Button';
 import Select from '../common/Select';
 import { ImageSkeleton } from '../common/Skeleton';
@@ -50,8 +50,7 @@ const ImageGenerator: React.FC = () => {
       const generatedImage = await geminiService.generateImage(prompt, aspectRatio, sourceImage);
       setImage(generatedImage);
     } catch (err) {
-      setError(t.common.error);
-      console.error(err);
+      setError(getGeminiError(err));
     } finally {
       setIsLoading(false);
     }

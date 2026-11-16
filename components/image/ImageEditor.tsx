@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { geminiService } from '../../services/geminiService';
+import { geminiService, getGeminiError } from '../../services/geminiService';
 import Button from '../common/Button';
 import Spinner from '../common/Spinner';
 import { ImageFile } from '../../types';
@@ -40,8 +40,7 @@ const ImageEditor: React.FC = () => {
       const result = await geminiService.editImage(prompt, originalImage);
       setEditedImage(result);
     } catch (err) {
-      setError(t.common.error);
-      console.error(err);
+      setError(getGeminiError(err));
     } finally {
       setIsLoading(false);
     }

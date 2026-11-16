@@ -10,10 +10,20 @@ import { AppView } from './types';
 import TabButton from './components/TabButton';
 import { BrainCircuit, Image, Bot, Wand, Mic, ImageUp } from './components/Icons';
 import { useLanguage } from './LanguageContext';
+import { TextInput } from '@astryxdesign/core/TextInput';
+import { Button as AstryxButton } from '@astryxdesign/core/Button';
+import { VStack } from '@astryxdesign/core/VStack';
+import { setGeminiApiKey } from './services/geminiService';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<AppView>(AppView.CONTENT_GENERATOR);
+  const [visitorKey, setVisitorKey] = useState('');
   const { t } = useLanguage();
+
+  const changeKey = (key: string) => {
+    setVisitorKey(key);
+    setGeminiApiKey(key);
+  };
 
   const renderView = () => {
     switch (activeView) {
@@ -47,6 +57,21 @@ const App: React.FC = () => {
       <Header />
       <main className="container mx-auto p-4 md:p-8">
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-brand-pink-900/10 p-4 md:p-6 lg:p-8 min-h-[80vh] transition-colors duration-300">
+          <VStack gap={2}>
+            <TextInput
+              type="password"
+              label="Gemini API key"
+              description="Use your own key from Google AI Studio. It stays in this tab and is sent only to Google for your requests."
+              value={visitorKey}
+              onChange={changeKey}
+              autoComplete="off"
+              autoCapitalize="off"
+              hasAutoCorrect={false}
+              hasSpellCheck={false}
+              width="100%"
+            />
+            {visitorKey && <AstryxButton label="Clear API key" variant="ghost" size="sm" onClick={() => changeKey('')} />}
+          </VStack>
           <div className="flex flex-wrap gap-2 md:gap-4 border-b border-gray-200 dark:border-slate-700 pb-4 mb-6">
             <TabButton onClick={() => setActiveView(AppView.CONTENT_GENERATOR)} active={activeView === AppView.CONTENT_GENERATOR}><BrainCircuit className="w-5 h-5 mr-2" /> {t.tabs.content}</TabButton>
             <TabButton onClick={() => setActiveView(AppView.IMAGE_GENERATOR)} active={activeView === AppView.IMAGE_GENERATOR}><Image className="w-5 h-5 mr-2" /> {t.tabs.imageGen}</TabButton>

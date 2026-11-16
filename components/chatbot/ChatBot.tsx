@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { geminiService } from '../../services/geminiService';
+import { geminiService, getGeminiError } from '../../services/geminiService';
 import { ChatMessage } from '../../types';
 import Button from '../common/Button';
 import { useLanguage } from '../../LanguageContext';
@@ -37,15 +37,20 @@ const ChatBot: React.FC = () => {
       for await (const chunk of stream) {
         setHistory(prev => {
           const newHistory = [...prev];
-          newHistory[newHistory.length - 1].parts[0].text += chunk.text;
+          newHistory[newHistory.length - 1] = {
+            role: 'model',
+            parts: [{ text: newHistory[newHistory.length - 1].parts[0].text + (chunk.text || '') }],
+          };
           return newHistory;
         });
       }
     } catch (error) {
-      console.error("Chat error:", error);
       setHistory(prev => {
         const newHistory = [...prev];
-        newHistory[newHistory.length - 1].parts[0].text = t.aiCoach.error;
+        newHistory[newHistory.length - 1] = {
+          role: 'model',
+          parts: [{ text: getGeminiError(error) }],
+        };
         return newHistory;
       });
     } finally {
